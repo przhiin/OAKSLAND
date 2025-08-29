@@ -1,0 +1,84 @@
+import json
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.contrib.auth.decorators import login_required
+from .models import CartItem, Order
+from products.models import Product
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
+
+@login_required
+@csrf_exempt
+def add_to_cart(request):
+    if request.method == "POST":
+        data = json.loads(request.body.decode("utf-8"))
+        product_id = data.get("product_id")
+        quantity = data.get("quantity", 1)
+
+        try:
+            product = Product.objects.get(id=product_id)
+        except Product.DoesNotExist:
+            return JsonResponse({"error": "Product not found"}, status=404)
+
+        cart_item, created = CartItem.objects.get_or_create(
+            user=request.user, product=product
+        )
+        if not created:
+            cart_item.quantity += quantity
+        else:
+            cart_item.quantity = quantity
+        cart_item.save()
+
+        return JsonResponse({"message": "Product added to cart", "product": product.name})
+    return JsonResponse({"error": "Invalid request"}, status=400)
+
+
+@login_required
+def view_cart(request):
+    cart_items = CartItem.objects.filter(user=request.user)
+    items = []
+    total = 0
+    for item in cart_items:
+        items.append({
+            "product": item.product.name,
+            "quantity": item.quantity,
+            "price": float(item.product.price),
+            "total_price": float(item.total_price())
+        })
+        total += item.total_price()
+    return JsonResponse({"cart": items, "total_amount": float(total)})
+
+
+@login_required
+@csrf_exempt
+def checkout(request):
+    cart_items = CartItem.objects.filter(user=request.user)
+    if not cart_items.exists():
+        return JsonResponse({"error": "Cart is empty"}, status=400)
+
+    total = sum([item.total_price() for item in cart_items])
+    order = Order.objects.create(user=request.user, total_amount=total)
+    order.items.set(cart_items)
+    order.save()
+
+    # Clear cart
+    cart_items.delete()
+
+    return JsonResponse({"message": "Order placed successfully", "order_id": order.id})
+
+
+@login_required
+def order_history(request):
+    orders = Order.objects.filter(user=request.user).order_by("-created_at")
+    data = []
+    for order in orders:
+        items = [{"product": item.product.name, "quantity": item.quantity} for item in order.items.all()]
+        data.append({
+            "order_id": order.id,
+            "items": items,
+            "total_amount": float(order.total_amount),
+            "status": order.status,
+            "created_at": order.created_at
+        })
+    return JsonResponse({"orders": data})
