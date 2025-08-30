@@ -17,19 +17,26 @@ class AddToCart(APIView):
         quantity = request.data.get("quantity", 1)
 
         try:
-            product = Product.objects.get(id=product_id)
+            product = Product.objects.get(id = product_id)
         except Product.DoesNotExist:
             return Response({"error": "Product not found"}, status=404)
-
+        
+        if product.stock < quantity:
+            return Response({"error": "Not enough stock available"}, status=400)
+        
         cart_item, created = CartItem.objects.get_or_create(
             user=request.user, product=product
         )
         if not created:
-            cart_item.quantity += int(quantity)
+            # New total if updating existing cart item
+            new_quantity = cart_item.quantity + quantity
+            if product.stock < new_quantity:
+                return Response({"error": "Not enough stock available"}, status=400)
+            cart_item.quantity = new_quantity
         else:
-            cart_item.quantity = int(quantity)
-        cart_item.save()
+            cart_item.quantity = quantity
 
+        cart_item.save()
         return Response({"message": "Product added to cart", "product": product.name})
 
 
@@ -53,16 +60,30 @@ class Checkout(APIView):
         if not cart_items.exists():
             return Response({"error": "Cart is empty"}, status=400)
 
+        # Verify stock before placing order
+        for item in cart_items:
+            if item.quantity > item.product.stock:
+                return Response(
+                    {"error": f"Not enough stock for {item.product.name}"},
+                    status=400
+                )
+
         total = sum([item.total_price() for item in cart_items])
         order = Order.objects.create(user=request.user, total_amount=total)
         order.items.set(cart_items)
         order.save()
+
+        # Reduce stock
+        for item in cart_items:
+            item.product.stock -= item.quantity
+            item.product.save()
 
         # Clear cart
         cart_items.delete()
 
         serializer = OrderSerializer(order)
         return Response({"message": "Order placed successfully", "order": serializer.data})
+
 
 
 # -------------------- ORDER HISTORY --------------------
