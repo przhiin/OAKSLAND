@@ -13,18 +13,18 @@ class LoginRequest(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
-        username = request.data.get("username")
+        email = request.data.get("email")
         password = request.data.get("password")
 
-        if not username or not password:
+        if not email or not password:
             return Response({"error": "Username and password required"}, status=400)
 
-        user = authenticate(username=username, password=password)
+        user = authenticate(email=email, password=password)
         if user is not None:
             login(request, user)
             return Response({"message": "Login successful", "user_id": user.id})
         else:
-            return Response({"error": "Invalid username or password"}, status=400)
+            return Response({"error": "Invalid email or password"}, status=400)
 
 
 # -------------------- REGISTER --------------------
@@ -32,31 +32,36 @@ class RegisterRequest(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
-        username = request.data.get("username")
-        password = request.data.get("password")
-        first_name = request.data.get("first_name")
-        last_name = request.data.get("last_name")
+        full_name = request.data.get("full_name")
         email = request.data.get("email")
         phone = request.data.get("phone")
-        address = request.data.get("address")
+        password = request.data.get("password")
+        re_password = request.data.get("re_password")
 
-        if not username or not password:
-            return Response({"error": "Username and password required"}, status=400)
+        if not full_name or not email or not phone or not password or not re_password:
+            return Response({"error": "All fields are required"}, status=400)
 
-        if User.objects.filter(username=username).exists():
-            return Response({"error": "Username already exists"}, status=400)
+        if password != re_password:
+            return Response({"error": "Passwords do not match"}, status=400)
+
+        if User.objects.filter(email=email).exists():
+            return Response({"error": "Email already registered"}, status=400)
+
+        # Split full name into first and last name (basic way)
+        name_parts = full_name.strip().split(" ", 1)
+        first_name = name_parts[0]
+        last_name = name_parts[1] if len(name_parts) > 1 else ""
 
         user = User.objects.create_user(
-            username=username,
-            password=password,
+            username=email,  # username set as email
+            email=email,
             first_name=first_name,
             last_name=last_name,
-            email=email,
             phone=phone,
-            address=address
+            password=password
         )
 
-        return Response({"message": "Registration complete", "user_id": user.id})
+        return Response({"message": "Registration successful", "user_id": user.id}, status=201)
 
 
 # -------------------- LOGOUT --------------------

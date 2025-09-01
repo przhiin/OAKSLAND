@@ -20,7 +20,7 @@ class Category(models.Model):
         return self.name
 
     def save(self, *args, **kwargs):
-        if not self.slug:
+        if not self.slug       :
             # simple slug creation (ensure uniqueness in more robust way if needed)
             base = slugify(self.name)
             slug = base
