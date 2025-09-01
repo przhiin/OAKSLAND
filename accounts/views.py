@@ -47,13 +47,12 @@ class RegisterRequest(APIView):
         if User.objects.filter(email=email).exists():
             return Response({"error": "Email already registered"}, status=400)
 
-        # Split full name into first and last name (basic way)
         name_parts = full_name.strip().split(" ", 1)
         first_name = name_parts[0]
         last_name = name_parts[1] if len(name_parts) > 1 else ""
 
         user = User.objects.create_user(
-            username=email,  # username set as email
+            username=email,  
             email=email,
             first_name=first_name,
             last_name=last_name,

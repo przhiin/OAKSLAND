@@ -8,7 +8,7 @@ class CustomUser(AbstractUser):
     email = models.EmailField(unique=True, blank=True, null=True)
     address = models.TextField(blank=True, null=True)
 
-    USERNAME_FIELD = 'username'  # login field
+    USERNAME_FIELD = 'username'  
     REQUIRED_FIELDS = [] 
 
     def __str__(self):
