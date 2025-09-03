@@ -51,6 +51,16 @@ MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
 
+# Email configuration for Gmail
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = 'preshintexbay@gmail.com'  # Your Gmail address
+EMAIL_HOST_PASSWORD = 'bjqc ubku ogox pcfs'  # Use App Password, not your regular password
+DEFAULT_FROM_EMAIL = 'preshintexbay@gmail.com'  # Your Gmail address
+
+
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
