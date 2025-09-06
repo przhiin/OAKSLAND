@@ -13,7 +13,75 @@ from django.utils import timezone
 User = get_user_model()
 
 # -------------------- REGISTER (Send OTP first) --------------------
-# -------------------- REGISTER (Send OTP first) --------------------
+
+from google.oauth2 import id_token
+from google.auth.transport import requests
+from rest_framework_simplejwt.tokens import RefreshToken
+
+class GoogleAuthView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        token = request.data.get("token")
+        if not token:
+            return Response({"error": "Token is required"}, status=400)
+
+        try:
+            # ✅ Verify Google token
+            idinfo = id_token.verify_oauth2_token(
+                token,
+                requests.Request(),
+                "YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com"
+            )
+
+            email = idinfo.get("email")
+            name = idinfo.get("name", "")
+            picture = idinfo.get("picture", "")
+
+            if not email:
+                return Response({"error": "Email not provided by Google"}, status=400)
+
+            # ✅ Split name into first + last
+            name_parts = name.strip().split(" ", 1)
+            first_name = name_parts[0]
+            last_name = name_parts[1] if len(name_parts) > 1 else ""
+
+            # ✅ Create or get user
+            user, created = User.objects.get_or_create(
+                email=email,
+                defaults={
+                    "username": email,
+                    "first_name": first_name,
+                    "last_name": last_name,
+                }
+            )
+
+            if created:
+                user.set_unusable_password()   # No password for Google users
+                user.email_verified = True     # Google already verified email
+                user.save()
+
+            # ✅ Issue JWT tokens (just like a normal login)
+            refresh = RefreshToken.for_user(user)
+
+            return Response({
+                "message": "Login successful via Google" if not created else "Registration successful via Google",
+                "refresh": str(refresh),
+                "access": str(refresh.access_token),
+                "user": {
+                    "id": user.id,
+                    "email": user.email,
+                    "name": f"{user.first_name} {user.last_name}".strip(),
+                    "picture": picture,
+                }
+            }, status=200)
+
+        except ValueError:
+            return Response({"error": "Invalid Google token"}, status=400)
+        except Exception as e:
+            return Response({"error": str(e)}, status=400)
+
+
 class RegisterRequest(APIView):
     permission_classes = [AllowAny]
 
@@ -57,7 +125,6 @@ class RegisterRequest(APIView):
             "email": email
         }, status=200)
 
-# -------------------- REGISTER VERIFICATION (Complete registration) --------------------
 # -------------------- REGISTER VERIFICATION (Complete registration) --------------------
 class RegisterVerifyView(APIView):
     permission_classes = [AllowAny]

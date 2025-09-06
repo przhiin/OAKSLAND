@@ -13,6 +13,7 @@ urlpatterns = [
     path('profile/', views.ViewProfile.as_view(), name='view_profile'),
     path('update-profile/', views.UpdateProfile.as_view(), name='update_profile'),
     path('superuser-login/', views.SuperuserLogin.as_view(), name='superuser_login'),
+    path("api/auth/google/", views.GoogleAuthView.as_view(), name="google_auth"),
 ]
 
 # from django.urls import path
