@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 from pathlib import Path
+from decouple import config, Csv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -20,17 +21,16 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-r2#ae+-a@8#w$yt6tr&rk5a06gf@lp+j&apkixr7^o@t-=xjl9'
+SECRET_KEY = config('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
-
+DEBUG = config("DEBUG", cast=bool, default=True)
 ALLOWED_HOSTS = []
 
 
 # Application definition
 
-INSTALLED_APPS = [
+INSTALLED_APPS = ["jazzmin",
     "admin_interface",
     "colorfield",
     'django.contrib.admin',
@@ -42,6 +42,19 @@ INSTALLED_APPS = [
     'accounts','products','cart','home','rest_framework',"django_filters",
 ]
 
+JAZZMIN_SETTINGS = {
+    "site_title": "OAKSLAND Admin",
+    "site_header": "OAKSLAND Dashboard",
+    "site_brand": "OAKSLAND",
+    "welcome_sign": "Welcome to OAKSLAND Admin",
+    "copyright": "OAKSLAND © 2025",
+    "search_model": ["auth.User", "core.Product"],  # example
+    "show_ui_builder": True,  # allows theme tweaks in the UI
+
+     
+    "theme": "cyborg",
+    "dark_mode_theme": "cyborg",
+}
 
 AUTH_USER_MODEL = "accounts.CustomUser"
 
@@ -50,16 +63,16 @@ AUTH_USER_MODEL = "accounts.CustomUser"
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
+from decouple import config, Csv
+import os
+from datetime import timedelta
 
 # Email configuration for Gmail
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_PORT = 587
-EMAIL_USE_TLS = True
-EMAIL_HOST_USER = 'preshintexbay@gmail.com'  # Your Gmail address
-EMAIL_HOST_PASSWORD = 'bjqc ubku ogox pcfs'  # Use App Password, not your regular password
-DEFAULT_FROM_EMAIL = 'preshintexbay@gmail.com'  # Your Gmail address
-
+EMAIL_HOST = config("EMAIL_HOST")
+EMAIL_PORT = config("EMAIL_PORT", cast=int)
+EMAIL_USE_TLS = config("EMAIL_USE_TLS", cast=bool)
+EMAIL_HOST_USER = config("EMAIL_HOST_USER")
+EMAIL_HOST_PASSWORD = config("EMAIL_HOST_PASSWORD")
 
 
 MIDDLEWARE = [
@@ -95,19 +108,24 @@ WSGI_APPLICATION = 'OAKSLAND.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
+
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'oaksland_db',       # database name
-        'USER': 'root',           # your MySQL username
-        'PASSWORD': '~W,C+N.PE3-AkCi',  # your MySQL password
-        'HOST': 'localhost',      # or 'localhost'
-        'PORT': '3306',           # default MySQL port
+        'ENGINE': config('ENGINE'),
+        'NAME': config("NAME"),
+        'USER': config("USER"),
+        'PASSWORD': config("PASSWORD"),
+        'HOST': config("HOST"),
+        'PORT': config("PORT"),
     }
 }
-
-
-
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=config("ACCESS_TOKEN_LIFETIME", cast=int, default=30)),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=config("REFRESH_TOKEN_LIFETIME", cast=int, default=7)),
+    "ALGORITHM": config("JWT_ALGORITHM", default="HS256"),
+    "SIGNING_KEY": SECRET_KEY,
+    "AUTH_HEADER_TYPES": ("Bearer",),
+}
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
 
@@ -129,7 +147,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 
 
-from datetime import timedelta
+
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
@@ -177,6 +195,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = 'static/'
+
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field

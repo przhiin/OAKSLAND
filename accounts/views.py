@@ -2,7 +2,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from django.contrib.auth import authenticate
-from django.contrib.auth import get_user_model, login, logout
+from django.contrib.auth import get_user_model, login, logout 
 from .models import CustomUser, OTP
 from .serializers import OTPRequestSerializer, OTPVerifySerializer, UserSerializer
 from django.core.mail import send_mail
@@ -336,12 +336,6 @@ class SuperuserLogin(APIView):
             login(request, user)
             return Response({"success": True, "message": "Superuser logged in!"})
         return Response({"success": False, "message": "Invalid superuser credentials"})
-
-
-
-
-
-
 
 
 
